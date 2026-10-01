@@ -2,7 +2,7 @@
 
 Proyecto de machine learning para estimar, en el momento de crear o confirmar una reserva, la probabilidad de que esta sea cancelada. El propósito es apoyar la priorización de acciones preventivas de Revenue Management sin emplear información que solo se conoce después de la reserva.
 
-> Estado de los resultados: las métricas de la comparación de modelos que aparecen en este README proceden de la salida almacenada en el notebook. Las celdas posteriores de selección de umbral no conservaron su salida al guardar el notebook; por tanto, sus métricas no se presentan como resultados finales hasta reproducir la ejecución completa.
+> Estado de los resultados: las métricas de este README proceden de la ejecución completa guardada en el notebook. El umbral operativo se selecciona en validación interna con una hipótesis de coste `FN = 3 × FP`.
 
 ## 1. Dataset
 
@@ -88,22 +88,23 @@ La partición es temporal: 75 % de entrenamiento (65.547 filas) y 25 % de test (
 
 ## 8. Resultados
 
-### Comparación guardada en el notebook
+### Comparación final en test temporal
 
-La siguiente tabla corresponde exactamente a la salida persistida de la comparación de modelos. Todos se evalúan sobre el test temporal con umbral **0,50**.
+La siguiente tabla corresponde a la ejecución completa guardada en el notebook. Los cuatro primeros modelos se evalúan con umbral 0,50; la última fila utiliza el umbral operativo seleccionado en validación interna.
 
 | Modelo | ROC-AUC | PR-AUC | Accuracy | Precision | Recall | F1 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Regresión logística | 0,8107 | 0,6897 | 0,7475 | 0,6420 | 0,6076 | 0,6243 |
-| Regresión logística balanceada | 0,8100 | 0,6817 | 0,6441 | 0,4917 | **0,9111** | **0,6387** |
-| Random Forest | 0,8159 | 0,6664 | 0,7377 | **0,6868** | 0,4417 | 0,5377 |
-| XGBoost optimizado | **0,8303** | **0,6962** | **0,7495** | 0,6784 | 0,5221 | 0,5901 |
+| Regresión logística | 85,43 % | 82,03 % | 77,04 % | 71,77 % | 71,36 % | 71,56 % |
+| Regresión logística balanceada | 85,41 % | 81,81 % | 73,98 % | 63,35 % | 84,74 % | **72,50 %** |
+| Random Forest | 86,69 % | 82,26 % | 77,05 % | **79,73 %** | 58,08 % | 67,20 % |
+| XGBoost optimizado (0,50) | **87,58 %** | **83,51 %** | **78,13 %** | 76,99 % | 65,57 % | 70,82 % |
+| XGBoost operativo (0,15) | **87,58 %** | **83,51 %** | 68,58 % | 56,50 % | **97,36 %** | 71,50 % |
 
-XGBoost obtiene la mejor capacidad de discriminación, medida por ROC-AUC y PR-AUC. La regresión logística balanceada maximiza el recall a costa de una precisión menor, por lo que genera más intervenciones sobre reservas que finalmente no se cancelarían.
+XGBoost obtiene la mejor capacidad de discriminación, medida por ROC-AUC y PR-AUC. La regresión logística balanceada logra el F1 más alto a umbral 0,50, mientras que Random Forest logra la mayor precisión.
 
 ### Selección del umbral de negocio
 
-El notebook implementa una selección de umbral en validación interna con una hipótesis ilustrativa de coste `FN = 3 × FP`, y también compara XGBoost con umbral 0,15. Sin embargo, las salidas de esas celdas no están guardadas en el archivo publicado. Para mantener trazabilidad, no se incluyen aquí cifras de esos dos escenarios. Deben incorporarse al README solo después de ejecutar el notebook completo y guardar sus resultados.
+La validación interna, con la hipótesis de que un falso negativo cuesta tres veces más que un falso positivo (`FN = 3 × FP`), selecciona el umbral **0,15**. En el test temporal, este umbral alcanza un recall de **97,36 %**: detecta 11.765 cancelaciones y deja 319 sin detectar, frente a 4.161 falsos negativos de XGBoost con umbral 0,50. El coste operativo es un aumento de falsos positivos, de 2.368 a 9.059. Esta es una decisión de negocio, no una mejora universal de todas las métricas.
 
 ## 9. Interpretabilidad (SHAP)
 
